@@ -5,11 +5,14 @@ members = [
     "rocket-okapi-codegen",
     "examples/json-web-api",
     "examples/custom_schema",
-    "examples/uuid",
+    "examples/nested",
+    "examples/uuid_usage",
     "examples/special-types",
     "examples/secure_request_guard",
     "examples/streams",
     "examples/dyn_templates",
     "examples/openapi_attributes",
     "examples/raw_identifiers",
+    "examples/websocket",
 ]
+resolver = "2"

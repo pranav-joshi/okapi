@@ -19,7 +19,7 @@ visualize the documentation. Rocket-okapi currently includes [RapiDoc][RapiDoc] 
 [Swagger UI][Swagger_UI], but others can be used too.
 
 Supported OpenAPI Spec: [3.0.0][OpenAPI_3.0.0]<br/>
-Supported Rocket version (for `rocket_okapi`): [0.5.0-rc.2](https://crates.io/crates/rocket/0.5.0-rc.2)
+Supported Rocket version (for `rocket_okapi`): [0.5.0](https://crates.io/crates/rocket/0.5.0)
 
 Example of generated documentation using Okapi:
 - DF Storyteller: [RapiDoc](https://docs.dfstoryteller.com/rapidoc/),
@@ -43,16 +43,43 @@ It shows: No authentication, API keys, HTTP Auth, OAuth2, OpenID and Cookies.
 
 ## FAQ
 
-- **Q: Can I generate code from my OpenAPI file?**<br/>
+### Q: Can I generate code from my OpenAPI file?
 A: No, this crate only allows you to automatically generate the OpenAPI file from your code.
 There are other crates that (attempt to) do this.
 So:
-  - Rust code (Rocket) --> OpenAPI == Okapi
-  - OpenAPI --> Rust code != Okapi
+  - (Rust code (Rocket) --> OpenAPI) == Okapi
+  - (OpenAPI --> Rust code) != Okapi
 
-- **Q: My (diesel) database does not implement `OpenApiFromRequest`.**<br/>
+### Q: How do I document my endpoints?
+A: Okapi automatically uses the [Rust Doc Comments](https://doc.rust-lang.org/rustdoc/how-to-write-documentation.html)
+from most places, this includes:
+    - Endpoint functions.
+    - Endpoint function arguments, using [Schemars][Schemars]. Adding documentation for `String`
+    and other default types is not possible unless used in an other `struct`. See
+    [this issue for more info](https://github.com/GREsau/okapi/issues/102#issuecomment-1152918141).
+    - Endpoint function return type, using [Schemars][Schemars]. Same rules apply as arguments.
+    In case of `Result<T, E>`, the error codes can be documented,
+    [see this example](https://github.com/GREsau/okapi/blob/master/examples/custom_schema/src/error.rs).
+
+Some more info can be provided using the `#[openapi(...)]` derive macro, for more info see:
+[OpenApiAttribute](https://github.com/GREsau/okapi/blob/master/rocket-okapi-codegen/src/openapi_attr/mod.rs#L22).
+
+[Schemars][Schemars] also can be used to provide more info for objects that implement
+`#[derive(JsonSchema)]` using the `#[schemars(...)]` and `#[serde(...)]` syntax.
+[For more info see `Attrs`](https://github.com/GREsau/schemars/blob/master/schemars_derive/src/attr/mod.rs#L22)
+
+Documentation can be enhanced in most other places too, but might require custom implementations.
+[See our examples for more info](https://github.com/GREsau/okapi/tree/master/examples).
+
+If the above is not sufficient, you can always create your custom
+[`OpenAPI`](https://docs.rs/okapi/latest/okapi/openapi3/struct.OpenApi.html) objects.
+This will can then be merged into the final OpenAPI file.
+[For more info see this example](https://github.com/GREsau/okapi/blob/master/examples/custom_schema/src/main.rs#L61).
+Use this method only if really necessary! (As it might overwrite other generated objects.)
+
+### Q: My (diesel) database does not implement `OpenApiFromRequest`.
 A: This is because the parameter does not show up in the path, query or body.
-So this is considered a [Request Guard](https://rocket.rs/v0.5-rc/guide/requests/#request-guards).
+So this is considered a [Request Guard](https://rocket.rs/v0.5/guide/requests/#request-guards).
 There is a [derive macro](https://github.com/GREsau/okapi/blob/master/examples/secure_request_guard/src/no_auth.rs)
 for this, but this does not work in combination with the `#[database("...")]` marco.
 You can solve this my implementing it manually, like this:
@@ -79,18 +106,18 @@ impl<'r> OpenApiFromRequest<'r> for MyDB {
 ```
 </details>
 
-- **Q: ... does not implement `JsonSchema`?**<br/>
+### Q: ... does not implement `JsonSchema`?
 A: The [`JsonSchema`](https://docs.rs/schemars/latest/schemars/trait.JsonSchema.html) implementation
 is handled by [`Schemars`][Schemars], make sure you enabled the right
 [feature flags](https://github.com/GREsau/schemars#optional-dependencies) for it.
 If it is still not implemented open an issue in the `Schemars` repo.
 
-- **Q: Can I add custom data to my OpenAPI spec?**<br/>
+### Q: Can I add custom data to my OpenAPI spec?
 A: Yes, see the [Custom Schema](examples/custom_schema) example. Okapi also has build in functions
 if you want to merge the [`OpenAPI`](https://docs.rs/okapi/latest/okapi/openapi3/struct.OpenApi.html)
 objects manually.
 
-- **Q: Can I use this with other web frameworks then Rocket?**<br/>
+### Q: Can I use this with other web frameworks then Rocket?
 A: Yes, but not there are no other implementations right now. But you can use the `Okapi` crate
 independently and use Serde to create the json or yaml file.
 
@@ -107,14 +134,16 @@ Rocket-Okapi:
 - `swagger`: Enable [Swagger UI][Swagger_UI] for rendering documentation.
 - `rapidoc`: Enable [RapiDoc][RapiDoc] for rendering documentation.
 - `uuid`: Enable UUID support in Rocket and Schemars.
-- `msgpack`: Enable [msgpack support for Rocket](https://docs.rs/rocket/0.5.0-rc.2/rocket/serde/msgpack/struct.MsgPack.html).
+- `msgpack`: Enable [msgpack support for Rocket](https://docs.rs/rocket/latest/rocket/serde/msgpack/struct.MsgPack.html).
 (when same Rocket feature flag is used.)
-- `secrets`: Enable [secrets support for Rocket](https://rocket.rs/v0.5-rc/guide/requests/#secret-key).
+- `secrets`: Enable [secrets support for Rocket](https://rocket.rs/v0.5/guide/requests/#secret-key).
 (when same Rocket feature flag is used.)
-- `mtls`: Enable [mutual TSL for Rocket](https://rocket.rs/v0.5-rc/guide/configuration/#mutual-tls).
+- `mtls`: Enable [mutual TSL for Rocket](https://rocket.rs/v0.5/guide/configuration/#mutual-tls).
 (when same Rocket feature flag is used.)
 - `rocket_dyn_templates`: Enable compatibility with [`rocket_dyn_templates`](https://crates.io/crates/rocket_dyn_templates).
 - `rocket_db_pools`: Enable compatibility with [`rocket_db_pools`](https://crates.io/crates/rocket_db_pools).
+- `rocket_sync_db_pools`: Enable compatibility with [`rocket_sync_db_pools`](https://crates.io/crates/rocket_sync_db_pools).
+- `rocket_ws`: Enable compatibility with [`rocket_ws`](https://crates.io/crates/rocket_ws).
 
 Note that not all feature flags from [`Schemars`][Schemars] are re-exported or enabled.
 So if you have objects for which the `JsonSchema` trait is not implemented,

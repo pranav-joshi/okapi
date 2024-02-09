@@ -1,11 +1,10 @@
 use rocket::{Build, Rocket};
 use rocket_okapi::okapi::openapi3::OpenApi;
 use rocket_okapi::settings::UrlObject;
-use rocket_okapi::{mount_endpoints_and_merged_docs, rapidoc::*, swagger_ui::*};
+use rocket_okapi::{mount_endpoints_and_merged_docs, rapidoc::*};
 
+mod api;
 mod error;
-mod message;
-mod post;
 
 pub type Result<T> = std::result::Result<rocket::serde::json::Json<T>, error::Error>;
 pub type DataResult<'a, T> =
@@ -21,38 +20,29 @@ async fn main() {
 }
 
 pub fn create_server() -> Rocket<Build> {
-    let mut building_rocket = rocket::build()
-        .mount(
-            "/swagger-ui/",
-            make_swagger_ui(&SwaggerUIConfig {
-                url: "../v1/openapi.json".to_owned(),
+    let mut building_rocket = rocket::build().mount(
+        "/rapidoc/",
+        make_rapidoc(&RapiDocConfig {
+            title: Some("My special documentation | RapiDoc".to_owned()),
+            general: GeneralConfig {
+                spec_urls: vec![UrlObject::new("General", "../v1/openapi.json")],
                 ..Default::default()
-            }),
-        )
-        .mount(
-            "/rapidoc/",
-            make_rapidoc(&RapiDocConfig {
-                title: Some("My special documentation | RapiDoc".to_owned()),
-                general: GeneralConfig {
-                    spec_urls: vec![UrlObject::new("General", "../v1/openapi.json")],
-                    ..Default::default()
-                },
-                hide_show: HideShowConfig {
-                    allow_spec_url_load: false,
-                    allow_spec_file_load: false,
-                    ..Default::default()
-                },
+            },
+            hide_show: HideShowConfig {
+                allow_spec_url_load: false,
+                allow_spec_file_load: false,
                 ..Default::default()
-            }),
-        );
+            },
+            ..Default::default()
+        }),
+    );
 
     let openapi_settings = rocket_okapi::settings::OpenApiSettings::default();
     let custom_route_spec = (vec![], custom_openapi_spec());
     mount_endpoints_and_merged_docs! {
         building_rocket, "/v1".to_owned(), openapi_settings,
         "/external" => custom_route_spec,
-        "/post" => post::get_routes_and_docs(&openapi_settings),
-        "/message" => message::get_routes_and_docs(&openapi_settings),
+        "/api" => api::get_routes_and_docs(&openapi_settings),
     };
 
     building_rocket

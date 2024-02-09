@@ -15,6 +15,8 @@ use syn::{
     PathSegment, ReturnType, Type, TypeTuple,
 };
 
+/// This structure documents all the properties that can be used in
+/// the `#[openapi]` derive macro. for example: `#[openapi(tag = "Users")]`
 #[derive(Debug, Default, FromMeta)]
 #[darling(default)]
 struct OpenApiAttribute {
@@ -138,7 +140,7 @@ fn create_route_operation_fn(
     // ----- Check route info -----
 
     // -- Parse Query Strings --
-    // https://rocket.rs/v0.5-rc/guide/requests/#query-strings
+    // https://rocket.rs/v0.5/guide/requests/#query-strings
     let mut params = Vec::new();
     let mut params_nested_list = Vec::new();
     let mut params_request_guards = Vec::new();
@@ -232,7 +234,7 @@ fn create_route_operation_fn(
     }
 
     // -- Body Data --
-    // https://rocket.rs/v0.5-rc/guide/requests/#body-data
+    // https://rocket.rs/v0.5/guide/requests/#body-data
     let request_body = match &route.data_param {
         Some(data_param) => {
             let ty = match arg_types.get(data_param) {
@@ -251,7 +253,7 @@ fn create_route_operation_fn(
     };
 
     // -- Request Guards --
-    // https://rocket.rs/v0.5-rc/guide/requests/#request-guards
+    // https://rocket.rs/v0.5/guide/requests/#request-guards
     // Request Guards is every that is not already used and thus not in `params_names_used`.
     for (arg, ty) in &arg_types {
         // Skip all attributes that are in ignore list.
@@ -334,6 +336,7 @@ fn create_route_operation_fn(
             let request_body = #request_body;
             // Add the security scheme that are quired for all the routes.
             let mut security_requirements = Vec::new();
+            let mut server_requirements = Vec::new();
 
             // Combine all parameters from all sources
             // Add all from `path_params` and `path_multi_param`
@@ -364,6 +367,15 @@ fn create_route_operation_fn(
                         // Add the security scheme that are quired for all the route.
                         security_requirements.push(requirement);
                     }
+                    // Add Server to this request.
+                    RequestHeaderInput::Server(url, description, variables) => {
+                        server_requirements.push(::rocket_okapi::okapi::openapi3::Server{
+                            url,
+                            description,
+                            variables,
+                            ..Default::default()
+                        });
+                    }
                     _ => {
                     }
                 }
@@ -374,6 +386,12 @@ fn create_route_operation_fn(
                 None
             } else {
                 Some(security_requirements)
+            };
+            // Add `servers` section if list is not empty
+            let servers = if server_requirements.is_empty() {
+                None
+            } else {
+                Some(server_requirements)
             };
             // Add route/endpoint to OpenApi object.
             gen.add_operation(::rocket_okapi::OperationInfo {
@@ -387,6 +405,7 @@ fn create_route_operation_fn(
                     summary: #title,
                     description: #desc,
                     security,
+                    servers,
                     tags: vec![#(#tags),*],
                     deprecated: #deprecated,
                     ..Default::default()

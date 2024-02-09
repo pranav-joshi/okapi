@@ -80,6 +80,18 @@ pub enum RequestHeaderInput {
     /// - [`SecurityScheme`] is global definition of the authentication (per OpenApi spec).
     /// - [`SecurityRequirement`] is the requirements for the route.
     Security(String, SecurityScheme, SecurityRequirement),
+    /// A server this resources is allocated on.
+    ///
+    /// Parameters:
+    /// - The url
+    /// - The description
+    /// - Variable mapping: A map between a variable name and its value.
+    /// The value is used for substitution in the server’s URL template.
+    Server(
+        String,
+        Option<String>,
+        okapi::Map<String, okapi::openapi3::ServerVariable>,
+    ),
 }
 
 // Re-export derive trait here for convenience.
@@ -88,7 +100,7 @@ pub use rocket_okapi_codegen::OpenApiFromRequest;
 /// Trait that needs to be implemented for all types that implement
 /// [`FromRequest`](rocket::request::FromRequest).
 /// This trait specifies what headers or other parameters are required for this
-/// [Request Guards](https://rocket.rs/v0.5-rc/guide/requests/#request-guards)
+/// [Request Guards](https://rocket.rs/v0.5/guide/requests/#request-guards)
 /// to be validated successfully.
 ///
 /// If it does not quire any headers or parameters you can use the derive macro:
